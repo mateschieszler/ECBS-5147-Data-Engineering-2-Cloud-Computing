@@ -8,18 +8,18 @@ def encrypt(s: str) -> str:
     @param s: string to encrypt
     @return: the SHA256 hexdigest value of `s`
     """
-    pass
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
-def init_table() -> None:
+def init_table():
     """
     Returns empty dataframe
     @return: An empty dataframe with these columns: 'user_name' and 'password'
     """
-    pass
+    return {}
 
 
-def get_encrypted_password_for_user(user_name: str) -> Optional[str]:
+def get_encrypted_password_for_user(df, user_name: str) -> Optional[str]:
     """
     Returns the encrypted password of a user.
     If no user with the specified `user_name` exists, return None
@@ -27,7 +27,10 @@ def get_encrypted_password_for_user(user_name: str) -> Optional[str]:
     @param user_name: the username
     @return: the encrypted password of the user
     """
-    pass
+    if user_name not in df:
+        return None
+    else:
+        return df[user_name]
 
 
 def add_or_update_user(df: Any, user_name: str, password: str) -> Any:
@@ -42,7 +45,8 @@ def add_or_update_user(df: Any, user_name: str, password: str) -> Any:
 
     @return: the dataframe with the new user added or the password updated
     """
-    pass
+    df[user_name] = encrypt(password)
+    return df
 
 
 def authenticate_user(df: Any, user_name: str, password: str) -> bool:
@@ -55,7 +59,9 @@ def authenticate_user(df: Any, user_name: str, password: str) -> bool:
 
     @return: True if the user exists and the password matches, False otherwise
     """
-    pass
+    return (user_name in df) and (
+        get_encrypted_password_for_user(df, user_name) == encrypt(password)
+    )
 
 
 if __name__ == "__main__":
