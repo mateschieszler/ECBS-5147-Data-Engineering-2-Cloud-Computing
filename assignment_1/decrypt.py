@@ -1,18 +1,44 @@
 # %%
-import os
 from pathlib import Path
 
-print(os.path.abspath(__file__))
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.PublicKey import RSA
 
-# from Crypto.Cipher import PKCS1_OAEP
-# from Crypto.PublicKey import RSA
+PROJECT_FOLDER = Path(__file__).parent.parent / ASSIGNMENT_1
+PRIVATE_KEY_FILE = PROJECT_FOLDER / "ceu_key"
+PUBLIC_KEY_FILE = PROJECT_FOLDER / "ceu_key.pub"
 
-PROJECT_FOLDER = Path(__file__)
-# PRIVATE_KEY_FILE = PROJECT_FOLDER / "ceu_key"
-# PUBLIC_KEY_FILE = PROJECT_FOLDER / "ceu_key.pub"
+#print(PROJECT_FOLDER)
 
-# assert Path.exists(PRIVATE_KEY_FILE)
-# assert Path.exists(PUBLIC_KEY_FILE)
-print(__file__)
-print(PROJECT_FOLDER)
+assert Path.exists(PRIVATE_KEY_FILE)
+assert Path.exists(PUBLIC_KEY_FILE)
+
+# %%
+# Load the private key from file
+"""
+with open(PRIVATE_KEY_FILE, "r", encoding="utf8") as key_file:
+    private_key = RSA.import_key(key_file.read())
+
+# Generate public key from the private key
+with open(PUBLIC_KEY_FILE, "r", encoding="utf8") as key_file:
+    public_key = RSA.import_key(key_file.read())
+
+# %%
+short_secret_message = "My Secret Message".encode("utf-8")
+public_key_cipher = PKCS1_OAEP.new(public_key)
+encrypted_message = public_key_cipher.encrypt(short_secret_message)
+print(f"Encrypted message:")
+print(encrypted_message)
+"""
+# %%
+ENCRYPTED_MESSAGE_FILE = PROJECT_FOLDER / "encrypted_message.bin"
+with open(ENCRYPTED_MESSAGE_FILE, "wb") as f:
+    f.write(encrypted_message)
+# %%
+with open(ENCRYPTED_MESSAGE_FILE, "rb") as f:
+    encrypted_message_from_file = f.read()
+
+private_key_cipher = PKCS1_OAEP.new(private_key)
+decrypted_message = private_key_cipher.decrypt(encrypted_message_from_file)
+print(f"Decrypted message: {decrypted_message.decode('utf-8')}")
 # %%
