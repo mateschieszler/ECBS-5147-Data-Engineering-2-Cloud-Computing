@@ -13,7 +13,6 @@ print("Say hi again! " + bytestring.decode("utf-8"))
 
 # %%
 
-
 def naivehash(val):
     return str(sum(ord(c) for c in val) % 100)
 

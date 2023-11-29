@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # These all must return true
     assert get_encrypted_password_for_user(user_df, "nonexistent_user") is None
     assert get_encrypted_password_for_user(user_df, "first_user") == encrypt(
-        "example_password"
+        "new_example_password"
     )
     assert authenticate_user(user_df, "first_user", "new_example_password")
     assert authenticate_user(user_df, "second_user", "example_password_2")
