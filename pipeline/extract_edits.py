@@ -1,3 +1,5 @@
+# %%
+
 import datetime
 import json
 import os
@@ -5,8 +7,9 @@ import os
 import boto3
 import requests
 
-# SUBJECT DATE
-DATE_PARAM = "2022-10-28"
+# SUBJECT DATE ### TRY A FEW OF THIS IN CLASS - INSTRUCTONS WILL COME FROM THE INSTRUCTOR
+DATE_PARAM = "2023-10-25"
+
 date = datetime.datetime.strptime(DATE_PARAM, "%Y-%m-%d")
 
 # Wikimedia API URL formation
@@ -28,16 +31,21 @@ if wiki_response_status != 200:
         f"Received non-OK status code from Wiki Server: {wiki_response_status}. Response body: {wiki_response_body}"
     )
 
+# %%
 # Save Raw Response and upload to S3
-RAW_LOCATION_BASE = "data/raw-edits"
-os.makedirs(RAW_LOCATION_BASE, exist_ok=True)
+from pathlib import Path
 
-# Saving the contents of `wiki_response_body` to a file
-# The file is named in the format `raw-edits-YYYY-MM-DD.txt` and saved in the folder defined in `RAW_LOCATION_BASE`
-raw_edits_filename = f"raw-edits-{date.strftime('%Y-%m-%d')}.txt"
-raw_edits_fullpath = os.path.join(RAW_LOCATION_BASE, raw_edits_filename)
-with open(raw_edits_fullpath, "w") as file:
-    file.write(wiki_response_body)
+## Get the directory of the current file
+current_directory = Path(__file__).parent
+
+# Path for the new directory
+RAW_LOCATION_BASE = current_directory / "data" / "raw-edits"
+
+# Create the new directory, ignore if it already exists
+RAW_LOCATION_BASE.mkdir(exist_ok=True, parents=True)
+print(f"Created directory {RAW_LOCATION_BASE}")
+
+# %%
 
 ########
 # LAB  #
@@ -48,35 +56,56 @@ with open(raw_edits_fullpath, "w") as file:
 # i.e: `data/raw-edits/raw-edits-2021-10-01.txt`.
 
 
+# Saving the contents of `wiki_response_body` to a file
+# The file is named in the format `raw-edits-YYYY-MM-DD.txt` and saved in the folder defined in `RAW_LOCATION_BASE`
+
+## FILL IN YOUR SOLUTION HERE
+
+# %%
 ########
 # LAB  #
 ########
+s3 = boto3.client("s3")
+S3_WIKI_BUCKET = ""
+# Create a new bucket for your wikipedia pipeline
+# > A good name can be i.e. "ceu-<<your-name>>-wikidata"
+# > Store the bucket name in the varuable S3_WIKI_BUCKET
+
+## FILL IN YOUR SOLUTION HERE
+
+# Check your solution
+assert S3_WIKI_BUCKET != "", "Please set the S3_WIKI_BUCKET variable"
+assert s3.list_objects(
+    Bucket=S3_WIKI_BUCKET
+), "The bucket {S3_WIKI_BUCKET} does not exist"
+
+# %%
+
 # Upload the file you created to S3.
-# - Upload the file to your bucket (you can reuse your bucket from previous classes or create a new one).
+# - Upload the file to your bucket.
 # - Place the file in S3 under a folder called `datalake/raw/`.
-# - Keep the file's name as `raw-edits-YYYY-MM-DD.txt`
+# - Keep the file's name as `raw-edits-YYYY-MM-DD.txt` (where YYYY-MM-DD is the date of the file).
+#   > Don't hardcode the date. Calculate it from the DATE_PARAM variable.
 # - Verify that the file is there (list the bucket in Python or on the AWS Website)
 
-# BUCKET="{your bucket name}"
-#
-# {{ FILL IN AWS SETUP STEPS (you might need to copy your accessKey.csv to the working directory) }}
-#
-
-# Upload the file
-# s3.upload_file("{{ ADD LOCAL FILE PATH }}", BUCKET, f'{{ ADD FOLDER AND FILE NAME HERE in a form of FOLDER/FILE_NAME }}"')
+assert s3.head_object(
+    Bucket=S3_WIKI_BUCKET,
+    Key=f"/datalake/raw/raw-edits-{date.strftime('%Y-%m-%d')}.txt",
+)
 
 # END OF LAB
 
+# %%
 # Parse the Wikipedia response and process the data
 wiki_response_parsed = wiki_server_response.json()
 top_edits = wiki_response_parsed["items"][0]["results"][0]["top"]
 
 # Convert server's response to JSON lines
-current_time = datetime.datetime.now()
+current_time = datetime.datetime.utcnow()  # Always use UTC!!
 json_lines = ""
 for page in top_edits:
     record = {
-        "title": page["page_title"][0],
+        "title": page["page_title"],
         "edits": page["edits"],
         "date": date.strftime("%Y-%m-%d"),
         "retrieved_at": current_time.isoformat(),
@@ -84,14 +113,20 @@ for page in top_edits:
     json_lines += json.dumps(record) + "\n"
 
 # Save the Top Edits JSON lines and upload them to S3
-JSON_LOCATION_BASE = "data/edits"
-os.makedirs(JSON_LOCATION_BASE, exist_ok=True)
+JSON_LOCATION_DIR = current_directory / "data" / "edits"
+JSON_LOCATION_DIR.mkdir(exist_ok=True, parents=True)
+print(f"Created directory {JSON_LOCATION_DIR}")
+print(f"JSON lines:\n{json_lines}")
 
+# %%
 json_lines_filename = f"edits-{date.strftime('%Y-%m-%d')}.json"
-json_lines_fullpath = os.path.join(JSON_LOCATION_BASE, json_lines_filename)
+json_lines_file = JSON_LOCATION_DIR / json_lines_filename
 
-with open(json_lines_fullpath, "w") as file:
+with json_lines_file.open("w") as file:
     file.write(json_lines)
 
 # Upload the JSON file
-s3.upload_file(json_lines_fullpath, BUCKET, f"datalake/edits/{json_lines_filename}")
+s3.upload_file(json_lines_file, S3_WIKI_BUCKET, f"datalake/edits/{json_lines_filename}")
+print(
+    f"Uploaded JSON lines to s3://{S3_WIKI_BUCKET}/datalake/edits/{json_lines_filename}"
+)
